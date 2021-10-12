@@ -56,6 +56,24 @@ public extension UIBezierPath {
         self.init()
         #endif
     }
+
+    /**
+     Parses a single path string. Parses synchronously.
+     - Parameter pathString: The path `d` string to parse.
+     - Parameter scaleEffect: Each value of path is scaled with this value.
+     */
+    convenience init(pathString: String, scaleEffect: CGFloat) {
+        let singlePath = SVGPath(singlePathString: pathString, scaleEffect: scaleEffect)
+        guard let cgPath = singlePath.svgLayer.path else {
+            self.init()
+            return
+        }
+        #if os(iOS) || os(tvOS)
+        self.init(cgPath: cgPath)
+        #elseif os(OSX)
+        self.init()
+        #endif
+    }
     
     /// :nodoc:
     @available(*, deprecated, message: "This method is deprecated. If you want to parse a single path, instantiate a new instance of SVGPath using the SVGPath(singlePathString:) initializer and pass the path string.")
