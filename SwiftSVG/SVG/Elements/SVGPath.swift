@@ -60,7 +60,9 @@ final class SVGPath: SVGShapeElement, ParsesAsynchronously, DelaysApplyingAttrib
     
     /// :nodoc:
     internal var svgLayer = CAShapeLayer()
-    
+
+    internal var scaleEffect: CGFloat? = nil
+
     /// :nodoc:
     internal init() { }
     
@@ -72,6 +74,20 @@ final class SVGPath: SVGShapeElement, ParsesAsynchronously, DelaysApplyingAttrib
      - parameter singlePathString: The `d` attribute value of a `<path>` element
      */
     internal init(singlePathString: String) {
+        self.shouldParseAsynchronously = false
+        self.parseD(singlePathString)
+    }
+
+    /**
+     Initializer to to set the `svgLayer`'s cgPath. The path string does not have to be a single path for the whole element, but can include multiple subpaths in the `d` attribute. For instance, the following is a valid path string to pass:
+     ```
+     <path d="M30 20 L25 15 l10 50z M40 60 l80 10 l 35 55z">
+     ```
+     - parameter singlePathString: The `d` attribute value of a `<path>` element
+     - parameter scaleEffect: Each value of path is scaled with this value
+     */
+    internal init(singlePathString: String, scaleEffect: CGFloat) {
+        self.scaleEffect = scaleEffect
         self.shouldParseAsynchronously = false
         self.parseD(singlePathString)
     }
@@ -89,9 +105,16 @@ final class SVGPath: SVGShapeElement, ParsesAsynchronously, DelaysApplyingAttrib
 
             let parsePathClosure = {
                 var previousCommand: PreviousCommand? = nil
-                for thisPathCommand in PathDLexer(pathString: workingString) {
-                    thisPathCommand.execute(on: pathDPath, previousCommand: previousCommand)
-                    previousCommand = thisPathCommand
+                if let scaleEffect = self.scaleEffect {
+                    for thisPathCommand in PathDLexer(pathString: workingString, scaleEffect: scaleEffect) {
+                        thisPathCommand.execute(on: pathDPath, previousCommand: previousCommand)
+                        previousCommand = thisPathCommand
+                    }
+                } else {
+                    for thisPathCommand in PathDLexer(pathString: workingString) {
+                        thisPathCommand.execute(on: pathDPath, previousCommand: previousCommand)
+                        previousCommand = thisPathCommand
+                    }
                 }
             }
             

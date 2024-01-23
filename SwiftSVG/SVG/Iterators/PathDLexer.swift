@@ -125,6 +125,8 @@ internal struct PathDLexer: IteratorProtocol, Sequence {
     
     /// :nodoc:
     private let workingString: ContiguousArray<CChar>
+
+    private var scaleEffect: CGFloat? = nil
     
     /**
      Initializer for creating a new `PathDLexer` from a path d string
@@ -133,11 +135,23 @@ internal struct PathDLexer: IteratorProtocol, Sequence {
         self.pathString = pathString
         self.workingString = self.pathString.utf8CString
     }
+
+    /**
+     Initializer for creating a new `PathDLexer` from a path d string with scaleEffect
+     */
+    internal init(pathString: String, scaleEffect: CGFloat) {
+        self.scaleEffect = scaleEffect
+        self.pathString = pathString
+        self.workingString = self.pathString.utf8CString
+    }
     
     /**
      Required by Swift's `IteratorProtocol` that returns a new `PathDLexer`
      */
     internal func makeIterator() -> PathDLexer {
+        if let scaleEffect = scaleEffect {
+            return PathDLexer(pathString: pathString, scaleEffect: scaleEffect)
+        }
         return PathDLexer(pathString: self.pathString)
     }
     
@@ -207,7 +221,10 @@ internal struct PathDLexer: IteratorProtocol, Sequence {
         if byteArray.count == 0 {
             return
         }
-        if let validCoordinate = Double(byteArray: byteArray) {
+        if var validCoordinate = Double(byteArray: byteArray) {
+            if let scaleEffect = scaleEffect {
+                validCoordinate = validCoordinate * scaleEffect
+            }
             self.currentCommand?.pushCoordinate(validCoordinate)
             self.numberArray.removeAll()
         }
